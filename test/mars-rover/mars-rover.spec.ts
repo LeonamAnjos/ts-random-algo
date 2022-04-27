@@ -1,4 +1,4 @@
-import {Command, MarsRover} from "../../src/general/mars-rover";
+import {Command, MarsRover} from "../../src/mars-rover/mars-rover";
 
 describe(MarsRover.name, () => {
     describe(MarsRover.prototype.report.name, () => {
