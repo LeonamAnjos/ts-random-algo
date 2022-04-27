@@ -21,76 +21,20 @@ An example command might be FLFFFRFLB
 Once the full command string has been followed, the rover reports it's current coordinates and heading in the format (6, 4) NORTH
 */
 
-enum Direction {
-    NORTH = 1,
-    EAST,
-    SOUTH,
-    WEST,
-}
-
-type DirectionStrings = keyof typeof Direction;
-
-const parseDirection = (str: string): Direction => {
-    if (!str) {
-        return Direction.NORTH;
-    }
-
-    const key = str.trim().toUpperCase();
-    return Direction[key as DirectionStrings] ?? Direction.NORTH;
-}
-
-type Coordinates = {
-    x: number,
-    y: number,
-    direction: Direction,
-}
-
-const isAxisX = (direction: Direction): boolean => {
-    return [Direction.EAST, Direction.WEST].includes(direction);
-}
-
-const isAscending = (direction: Direction): boolean => {
-    return [Direction.EAST, Direction.NORTH].includes(direction);
-}
-
-const move = (coordinates: Coordinates, progress: number): Coordinates => {
-    return isAxisX(coordinates.direction)
-    ? {...coordinates, x: coordinates.x + progress}
-    : {...coordinates, y: coordinates.y + progress};
-}
-
-const moveForward = (coordinates: Coordinates): Coordinates => {
-    const progress = isAscending(coordinates.direction) ? 1 : -1;
-    return move(coordinates, progress);
-}
-
-const moveBackwards = (coordinates: Coordinates): Coordinates => {
-    const progress = isAscending(coordinates.direction) ? -1 : 1;
-    return move(coordinates, progress);
-}
-
-const rotateLeft = (coordinates: Coordinates): Coordinates => {
-    const direction = coordinates.direction > Direction.NORTH ? coordinates.direction - 1 : Direction.WEST;
-    return {...coordinates, direction};
-}
-
-const rotateRight = (coordinates: Coordinates): Coordinates => {
-    const direction = coordinates.direction < Direction.WEST ? coordinates.direction + 1 : Direction.NORTH;
-    return {...coordinates, direction};
-}
+import { Coordinates } from "./coordinates";
+import { Direction, parseDirection } from "./directions";
 
 export type Command = "F" | "B" | "L" | "R";
-export type CommandFn = (coordinates: Coordinates) => Coordinates;
 
 export class MarsRover {
-    private readonly commandMap = new Map<Command, CommandFn>([
-        ["F", moveForward],
-        ["B", moveBackwards],
-        ["L", rotateLeft],
-        ["R", rotateRight],
+    private coordinates!: Coordinates;
+    private readonly commandMap = new Map<Command, () => void>([
+        ["F", () => this.coordinates.moveForward()],
+        ["B", () => this.coordinates.moveBackwards()],
+        ["L", () => this.coordinates.rotateLeft()],
+        ["R", () => this.coordinates.rotateRight()],
     ]);
 
-    private coordinates!: Coordinates;
 
     public constructor(coordinates: string) {
         this.coordinates = this.parseCoordinates(coordinates);
@@ -112,16 +56,12 @@ export class MarsRover {
                 return;
             }
 
-            this.coordinates = commandFn(this.coordinates);
+            commandFn();
         });
     }
 
     private parseCoordinates(value: string): Coordinates {
         const [x, y, d] = value.substring(1, value.length - 1).split(", ");
-        return {
-            x: +x,
-            y: +y,
-            direction: parseDirection(d),
-        }
+        return new Coordinates(+x, +y, parseDirection(d));
     }
 }
