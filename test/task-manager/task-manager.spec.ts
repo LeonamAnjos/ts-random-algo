@@ -1,4 +1,5 @@
-import {TaskManager} from "../../src/task-manager/task-manager";
+import { TaskManager } from "../../src/task-manager/task-manager";
+import { delay, randomInt } from "../utils";
 
 describe(TaskManager.name, () => {
     describe(".concurrency", () => {
@@ -68,7 +69,3 @@ describe(TaskManager.name, () => {
         });
     });
 });
-
-// HELPERS
-const delay = (time: number) => new Promise((res) => setTimeout(res, time));
-const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;

@@ -1,6 +1,6 @@
-import {minimumSwaps} from "../../src/arrays/minimum-swaps";
+import { minimumSwaps } from "../../src/arrays/minimum-swaps";
 
-describe("#minimumSwaps", () => {
+describe(".minimumSwaps()", () => {
     [
         {
             input: [7, 1, 3, 2, 4, 5, 6],
