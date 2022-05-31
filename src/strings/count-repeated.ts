@@ -13,18 +13,16 @@
 // hence number of repetitions is 4+2+2+1+2 = 11
 
 export const countRepeated = (paragraph: string): number => {
-  const words = paragraph.split(/[\W_]/g); // O(n) n == str.lenght
-
   const map: Map<String, number> = new Map<String, number>();
 
-  for (let i = 0; i < words.length; i++) {
-    // O(n) = n === words.lenght
-    if (!words[i]) continue;
+  paragraph
+    .split(/[\W_]/g) // O(n) n == str.lenght
+    .forEach((word: string) => {
+      if (!word) return;
 
-    const word = words[i].toLocaleLowerCase();
-    const count = map.get(word) ?? -1; // O(1)
-    map.set(word, count + 1); // O(1)
-  }
+      const w = word.toLocaleLowerCase(); // O(n) n == w.length
+      map.set(w, (map.get(w) ?? -1) + 1); // O(1)
+    });
 
   let count = 0;
   map.forEach((value: number) => {
