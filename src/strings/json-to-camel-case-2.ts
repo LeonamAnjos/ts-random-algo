@@ -17,17 +17,17 @@ const toCamelCaseV2 = (str: string): string => {
 const jsonToCamelCaseV2 = (json: JSONObject): JSONObject => {
   const newJson: JSONObject = {};
 
-  Object.keys(json).forEach((key: string) => {
-    if (Array.isArray(json[key])) {
-      newJson[toCamelCaseV2(key)] = (json[key] as JSONArray).map((value) =>
-        typeof value === "object" && !Array.isArray(value)
-          ? jsonToCamelCaseV2(value as JSONObject)
-          : value
+  Object.entries(json).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      newJson[toCamelCaseV2(key)] = (value as JSONArray).map((val) =>
+        typeof val === "object" && !Array.isArray(val)
+          ? jsonToCamelCaseV2(val as JSONObject)
+          : val
       );
-    } else if (typeof json[key] === "object") {
-      newJson[toCamelCaseV2(key)] = jsonToCamelCaseV2(json[key] as JSONObject);
+    } else if (typeof value === "object") {
+      newJson[toCamelCaseV2(key)] = jsonToCamelCaseV2(value as JSONObject);
     } else {
-      newJson[toCamelCaseV2(key)] = json[key];
+      newJson[toCamelCaseV2(key)] = value;
     }
   });
 
