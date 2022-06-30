@@ -27,7 +27,7 @@ type ResourceAccessCounter = {
 
 const TIME_PERIOD = 300;
 
-const mostAccessInPeriod = (
+const mostAccessedInPeriod = (
   access: number[],
   period: number = TIME_PERIOD
 ): number => {
@@ -51,7 +51,10 @@ const mostAccessInPeriod = (
   );
 };
 
-const mostRequestedResource = (logs: string[][]): ResourceAccessCounter => {
+const mostRequestedResource = (
+  logs: string[][],
+  periodInMs: number = TIME_PERIOD
+): ResourceAccessCounter => {
   const map = new Map<string, number[]>();
 
   for (const [time, _, resource] of logs) {
@@ -66,7 +69,7 @@ const mostRequestedResource = (logs: string[][]): ResourceAccessCounter => {
   };
 
   for (const [resource, access] of map.entries()) {
-    const count = mostAccessInPeriod(access, TIME_PERIOD);
+    const count = mostAccessedInPeriod(access, periodInMs);
 
     if (mostRequested.count < count) {
       mostRequested = {
