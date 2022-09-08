@@ -47,10 +47,10 @@ export class TaskManager {
                     resolve(result);
                 } catch (error: unknown) {
                     reject(error);
+                } finally {
+                    this._pendingCount--;
+                    this.tryToExecute();
                 }
-
-                this._pendingCount--;
-                this.tryToExecute();
             };
 
             this.queue.push(run);
@@ -64,7 +64,7 @@ export class TaskManager {
         }
 
         const task = this.queue.shift();
-        if (task) {
+        if (!!task) {
             task();
         }
     }
