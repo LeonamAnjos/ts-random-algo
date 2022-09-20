@@ -1,4 +1,4 @@
-import { RateLimiter } from './rate-limiter'
+import { InMemoryRateLimiterRegistry, RateLimiter } from './rate-limiter'
 
 describe("RateLimiter", () => {
     beforeEach(() => {
@@ -121,6 +121,76 @@ describe("RateLimiter", () => {
                 jest.advanceTimersByTime(timeElapsed);
                 expect(rateLimiter.isAllowed()).toBe(expected);
             });
+        });
+    });
+});
+
+describe("InMemoryRateLimiterRegistry", () => {
+
+    [
+        {
+            registry: new InMemoryRateLimiterRegistry(2, 300),
+            expected: {
+                limitPerPeriod: 2,
+                periodInMs: 300,
+            },
+        },
+        {
+            registry: new InMemoryRateLimiterRegistry(3, 40),
+            expected: {
+                limitPerPeriod: 3,
+                periodInMs: 40,
+            },
+        },
+    ].forEach(({registry, expected}, index) => {
+        it(`SHOULD create #${index}`, () => {
+            expect(registry.limitPerPeriod).toBe(expected.limitPerPeriod);
+            expect(registry.periodInMs).toBe(expected.periodInMs);
+        });
+    });
+
+    describe("#rateLimiter", () => {
+        [
+            {
+                registry: new InMemoryRateLimiterRegistry(2, 300),
+                expected: {
+                    limitPerPeriod: 2,
+                    periodInMs: 300,
+                },
+            },
+            {
+                registry: new InMemoryRateLimiterRegistry(3, 40),
+                expected: {
+                    limitPerPeriod: 3,
+                    periodInMs: 40,
+                },
+            },
+        ].forEach(({registry, expected}, index) => {
+            it(`SHOULD return a configured rate limiter #${index}`, () => {
+                const rateLimiter = registry.rateLimiter("id");
+
+                expect(rateLimiter.limitPerPeriod).toBe(expected.limitPerPeriod);
+                expect(rateLimiter.periodInMs).toBe(expected.periodInMs);
+            });
+        });
+
+
+        it("SHOULD return a new rate limiter WHEN first call with ID", () => {
+            const registry = new InMemoryRateLimiterRegistry(2, 300);
+            const rateLimiter = registry.rateLimiter("id");
+
+            expect(registry.rateLimiter("id_02")).not.toBe(rateLimiter);
+            expect(registry.rateLimiter("id_03")).not.toBe(rateLimiter);
+            expect(registry.rateLimiter("id_04")).not.toBe(rateLimiter);
+        });
+
+        it("SHOULD return same rate limiter WHEN multiple calls with same ID", () => {
+            const registry = new InMemoryRateLimiterRegistry(2, 300);
+            const rateLimiter = registry.rateLimiter("id");
+
+            expect(registry.rateLimiter("id")).toBe(rateLimiter);
+            expect(registry.rateLimiter("id")).toBe(rateLimiter);
+            expect(registry.rateLimiter("id")).toBe(rateLimiter);
         });
     });
 });

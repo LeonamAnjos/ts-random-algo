@@ -1,3 +1,20 @@
+export class InMemoryRateLimiterRegistry {
+    private readonly map: Map<string, RateLimiter> = new Map<string, RateLimiter>();
+
+    constructor(
+        public readonly limitPerPeriod: number,
+        public readonly periodInMs: number,
+    ) {}
+
+    public rateLimiter(id: string): RateLimiter {
+        if (!this.map.has(id)) {
+            this.map.set(id, new RateLimiter(this.limitPerPeriod, this.periodInMs));
+        }
+
+        return this.map.get(id)!;
+    }
+}
+
 export class RateLimiter {
     public readonly refillFactor: number;
     private bucketSize: number;
