@@ -10,62 +10,64 @@ Complete the implementation of the "TaskManager" class, considering that:
 
 */
 
-/***** Implementatation *****/
+/***** Implementation *****/
 
 export type Task<TaskResultType> =
-    | (() => PromiseLike<TaskResultType>)
-    | (() => TaskResultType);
+  | (() => PromiseLike<TaskResultType>)
+  | (() => TaskResultType);
 
 export interface Options {
-    readonly concurrency?: number;
+  readonly concurrency?: number;
 }
 
 export class TaskManager {
-    private readonly queue: Task<unknown>[] = [];
-    private readonly _concurrency!: number;
-    private _pendingCount: number = 0;
+  private readonly queue: Task<unknown>[] = [];
+  private readonly _concurrency!: number;
+  private _pendingCount: number = 0;
 
-    public constructor(options?: Options) {
-        this._concurrency = options?.concurrency ?? Number.POSITIVE_INFINITY;
-    }
+  public constructor(options?: Options) {
+    this._concurrency = options?.concurrency ?? Number.POSITIVE_INFINITY;
+  }
 
-    public get concurrency(): number {
-        return this._concurrency;
-    }
+  public get concurrency(): number {
+    return this._concurrency;
+  }
 
-    public get doesConcurrentAllowAnother(): boolean {
-        return this._pendingCount < this._concurrency;
-    }
+  public get doesConcurrentAllowAnother(): boolean {
+    return this._pendingCount < this._concurrency;
+  }
 
-    public add<TaskResultType>(fn: Task<TaskResultType>): Promise<TaskResultType> {
-        return new Promise<TaskResultType>((resolve, reject) => {
-            const run = async (): Promise<void> => {
-                this._pendingCount++;
+  public add<TaskResultType>(
+    fn: Task<TaskResultType>
+  ): Promise<TaskResultType> {
+    return new Promise<TaskResultType>((resolve, reject) => {
+      const run = async (): Promise<void> => {
+        this._pendingCount++;
 
-                try {
-                    const result = await fn();
-                    resolve(result);
-                } catch (error: unknown) {
-                    reject(error);
-                } finally {
-                    this._pendingCount--;
-                    this.tryToExecute();
-                }
-            };
-
-            this.queue.push(run);
-            this.tryToExecute();
-        });
-    }
-
-    public tryToExecute(): void {
-        if (!this.doesConcurrentAllowAnother) {
-            return;
+        try {
+          const result = await fn();
+          resolve(result);
+        } catch (error: unknown) {
+          reject(error);
+        } finally {
+          this._pendingCount--;
+          this.tryToExecute();
         }
+      };
 
-        const task = this.queue.shift();
-        if (!!task) {
-            task();
-        }
+      this.queue.push(run);
+      this.tryToExecute();
+    });
+  }
+
+  public tryToExecute(): void {
+    if (!this.doesConcurrentAllowAnother) {
+      return;
     }
+
+    const task = this.queue.shift();
+    if (!!task) {
+      task();
+    }
+  }
 }
