@@ -1,16 +1,14 @@
-import { delay, range } from "../utils";
+import { delay, isPositiveNumber, range } from "../utils";
 
 export interface RetryOptions {
   attempts?: number;
-  wait?: number | undefined;
+  wait?: number;
 }
 
 const defaultOptions: Required<RetryOptions> = {
   attempts: 3,
   wait: 0,
 };
-
-const isPositiveNumber = (n: number): boolean => Math.sign(n) > 0;
 
 export const retry = <TResult>(
   fn: () => TResult,
