@@ -1,9 +1,13 @@
+import { delay, range } from "../utils";
+
 export interface RetryOptions {
-  attempts: number;
+  attempts?: number;
+  wait?: number | undefined;
 }
 
-const defaultOptions: RetryOptions = {
+const defaultOptions: Required<RetryOptions> = {
   attempts: 3,
+  wait: 0,
 };
 
 const isPositiveNumber = (n: number): boolean => Math.sign(n) > 0;
@@ -12,18 +16,26 @@ export const retry = <TResult>(
   fn: () => TResult,
   options: RetryOptions = defaultOptions
 ): Promise<TResult> => {
-  if (!isPositiveNumber(options.attempts)) {
+  const { attempts = defaultOptions.attempts, wait = defaultOptions.wait } =
+    options;
+
+  if (!isPositiveNumber(attempts)) {
     return Promise.reject(Error("Attempts must be positive number!"));
   }
 
-  return new Promise<TResult>((resolve, reject) => {
-    for (let i = 1; i <= options.attempts; i++) {
+  return new Promise<TResult>(async (resolve, reject) => {
+    for (const i of range(1, attempts)) {
       try {
         resolve(fn());
         break;
       } catch (error) {
-        if (i === options.attempts) {
+        if (i === attempts) {
           reject(error);
+          break;
+        }
+
+        if (isPositiveNumber(wait)) {
+          await delay(wait);
         }
       }
     }
