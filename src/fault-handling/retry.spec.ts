@@ -3,6 +3,7 @@ import { retry } from "./retry";
 
 describe(".retry", () => {
   const fn = jest.fn();
+  const error = Error("Test Error");
 
   beforeEach(() => fn.mockClear());
 
@@ -28,7 +29,6 @@ describe(".retry", () => {
 
     [...range(1, 5)].forEach((attempts) => {
       it(`WHEN ${attempts} AND rejects`, async () => {
-        const error = Error("Something went wrong!");
         fn.mockImplementation(() => {
           throw error;
         });
@@ -45,7 +45,7 @@ describe(".retry", () => {
       it(`WHEN ${attempts} AND last attempt succeeds`, async () => {
         for (let j = 1; j < attempts; j++) {
           fn.mockImplementationOnce(() => {
-            throw Error("Error");
+            throw error;
           });
         }
 
@@ -65,7 +65,7 @@ describe(".retry", () => {
 
     beforeEach(() => {
       fn.mockImplementationOnce(() => {
-        throw Error();
+        throw error;
       });
 
       fn.mockReturnValueOnce("Done!");
@@ -103,16 +103,16 @@ describe(".retry", () => {
 
     beforeEach(() => {
       fn.mockImplementationOnce(() => {
-        throw Error();
+        throw error;
       })
         .mockImplementationOnce(() => {
-          throw Error();
+          throw error;
         })
         .mockImplementationOnce(() => {
-          throw Error();
+          throw error;
         })
         .mockImplementationOnce(() => {
-          throw Error();
+          throw error;
         })
         .mockReturnValueOnce("Done!");
     });
@@ -187,6 +187,28 @@ describe(".retry", () => {
       expect(fn).toHaveBeenCalledTimes(5);
       expect(waitFn).toHaveBeenCalledTimes(4);
       expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe("predicate", () => {
+    beforeEach(() => {
+      fn.mockImplementation(() => {
+        throw error;
+      });
+    });
+
+    [...range(1, 5)].forEach((i) => {
+      it(`WHEN false on ${i} attempt`, async () => {
+        const predicate = jest.fn((attempt: number) => attempt < i);
+
+        await retry(fn, { attempts: 10, predicate }).catch((err) => {
+          expect(err).toBe(error);
+        });
+
+        expect(fn).toHaveBeenCalledTimes(i);
+        expect(predicate).toHaveBeenCalledTimes(i);
+        expect(predicate).toHaveBeenCalledWith(i, error);
+      });
     });
   });
 });
