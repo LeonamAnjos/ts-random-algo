@@ -72,7 +72,7 @@ describe(".retry", () => {
     });
 
     it("WHEN 300", async () => {
-      retry<string>(fn, { wait: 300 }).then((value) =>
+      retry<string>(fn, { waitInMs: 300 }).then((value) =>
         expect(value).toBe("Done!")
       );
 
@@ -89,7 +89,7 @@ describe(".retry", () => {
     });
 
     it("WHEN -1", () => {
-      retry<string>(fn, { wait: -1 }).then((value) =>
+      retry<string>(fn, { waitInMs: -1 }).then((value) =>
         expect(value).toBe("Done!")
       );
 
@@ -120,7 +120,7 @@ describe(".retry", () => {
     it("WHEN (i) => 5**i * 100", async () => {
       const waitFn = jest.fn((i) => Math.pow(5, i) * 100); // 500ms, 2.500ms, 12.500ms, 62.500ms, 312.500ms
 
-      retry<string>(fn, { attempts: 5, wait: waitFn }).then((value) =>
+      retry<string>(fn, { attempts: 5, waitFn }).then((value) =>
         expect(value).toBe("Done!")
       );
 
@@ -156,7 +156,7 @@ describe(".retry", () => {
     it("WHEN (i) => i * 500", async () => {
       const waitFn = jest.fn((i) => i * 500); // 500ms, 1000ms, 1500ms, 2000ms, 2500ms
 
-      retry<string>(fn, { attempts: 5, wait: waitFn }).then((value) =>
+      retry<string>(fn, { attempts: 5, waitFn }).then((value) =>
         expect(value).toBe("Done!")
       );
 

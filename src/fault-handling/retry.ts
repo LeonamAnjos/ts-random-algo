@@ -5,22 +5,16 @@ type RetryPredicateFunc = (i: number, e: unknown) => boolean;
 
 export interface RetryOptions {
   attempts?: number;
-  wait?: number | RetryWaitFunc;
+  waitInMs?: number;
+  waitFn?: RetryWaitFunc;
   predicate?: RetryPredicateFunc;
 }
 
 const defaultOptions: Required<RetryOptions> = {
   attempts: 3,
-  wait: 0,
+  waitInMs: 0,
+  waitFn: () => 0,
   predicate: () => true,
-};
-
-const getCalcWaitFunc = (wait: number | RetryWaitFunc): RetryWaitFunc => {
-  if (typeof wait === "number") {
-    return () => wait as number;
-  }
-
-  return wait as RetryWaitFunc;
 };
 
 export const retry = <TResult>(
@@ -29,7 +23,8 @@ export const retry = <TResult>(
 ): Promise<TResult> => {
   const {
     attempts = defaultOptions.attempts,
-    wait = defaultOptions.wait,
+    waitInMs = defaultOptions.waitInMs,
+    waitFn = defaultOptions.waitFn,
     predicate = defaultOptions.predicate,
   } = options;
 
@@ -37,7 +32,9 @@ export const retry = <TResult>(
     return Promise.reject(Error("Attempts must be positive number!"));
   }
 
-  const calcWait: RetryWaitFunc = getCalcWaitFunc(wait);
+  const calcWaitTimeInMs: RetryWaitFunc = isPositiveNumber(waitInMs)
+    ? () => waitInMs
+    : waitFn;
 
   return new Promise<TResult>(async (resolve, reject) => {
     for (const i of range(1, attempts)) {
@@ -50,9 +47,9 @@ export const retry = <TResult>(
           break;
         }
 
-        const w = calcWait(i);
-        if (isPositiveNumber(w)) {
-          await delay(w);
+        const waitTimeInMs = calcWaitTimeInMs(i);
+        if (isPositiveNumber(waitTimeInMs)) {
+          await delay(waitTimeInMs);
         }
       }
     }
