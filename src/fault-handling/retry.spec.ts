@@ -7,7 +7,7 @@ describe(".retry", () => {
   beforeEach(() => fn.mockClear());
 
   describe("attempts", () => {
-    it("WHEN attempts: default AND succeeds", async () => {
+    it("WHEN default AND succeeds", async () => {
       fn.mockReturnValueOnce("Done!");
 
       const actual = await retry<string>(fn);
@@ -17,7 +17,7 @@ describe(".retry", () => {
     });
 
     [...range(-5, 0)].forEach((attempts) => {
-      it(`WHEN attempts: ${attempts}`, async () => {
+      it(`WHEN ${attempts}`, async () => {
         await retry(fn, { attempts }).catch((err) =>
           expect(err.message).toBe("Attempts must be positive number!")
         );
@@ -27,7 +27,7 @@ describe(".retry", () => {
     });
 
     [...range(1, 5)].forEach((attempts) => {
-      it(`WHEN attempts: ${attempts} AND rejects`, async () => {
+      it(`WHEN ${attempts} AND rejects`, async () => {
         const error = Error("Something went wrong!");
         fn.mockImplementation(() => {
           throw error;
@@ -42,7 +42,7 @@ describe(".retry", () => {
     });
 
     [...range(2, 6)].forEach((attempts) => {
-      it(`WHEN attempts: ${attempts} AND last attempt succeeds`, async () => {
+      it(`WHEN ${attempts} AND last attempt succeeds`, async () => {
         for (let j = 1; j < attempts; j++) {
           fn.mockImplementationOnce(() => {
             throw Error("Error");
@@ -60,7 +60,7 @@ describe(".retry", () => {
     });
   });
 
-  describe("wait", () => {
+  describe("wait as number", () => {
     jest.useFakeTimers();
 
     beforeEach(() => {
@@ -71,7 +71,7 @@ describe(".retry", () => {
       fn.mockReturnValueOnce("Done!");
     });
 
-    it("WHEN wait: 300", async () => {
+    it("WHEN 300", async () => {
       retry<string>(fn, { wait: 300 }).then((value) =>
         expect(value).toBe("Done!")
       );
@@ -88,12 +88,104 @@ describe(".retry", () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
-    it("WHEN wait: -1", () => {
+    it("WHEN -1", () => {
       retry<string>(fn, { wait: -1 }).then((value) =>
         expect(value).toBe("Done!")
       );
 
       expect(fn).toHaveBeenCalledTimes(2);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe("wait as function", () => {
+    jest.useFakeTimers();
+
+    beforeEach(() => {
+      fn.mockImplementationOnce(() => {
+        throw Error();
+      })
+        .mockImplementationOnce(() => {
+          throw Error();
+        })
+        .mockImplementationOnce(() => {
+          throw Error();
+        })
+        .mockImplementationOnce(() => {
+          throw Error();
+        })
+        .mockReturnValueOnce("Done!");
+    });
+
+    it("WHEN (i) => 5**i * 100", async () => {
+      const waitFn = jest.fn((i) => Math.pow(5, i) * 100); // 500ms, 2.500ms, 12.500ms, 62.500ms, 312.500ms
+
+      retry<string>(fn, { attempts: 5, wait: waitFn }).then((value) =>
+        expect(value).toBe("Done!")
+      );
+
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(waitFn).toHaveBeenCalledWith(1);
+      expect(waitFn).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(500);
+
+      expect(fn).toHaveBeenCalledTimes(2);
+      expect(waitFn).toHaveBeenCalledWith(2);
+      expect(waitFn).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(2500);
+
+      expect(fn).toHaveBeenCalledTimes(3);
+      expect(waitFn).toHaveBeenCalledTimes(3);
+      expect(waitFn).toHaveBeenCalledWith(3);
+
+      await jest.advanceTimersByTimeAsync(12500);
+
+      expect(fn).toHaveBeenCalledTimes(4);
+      expect(waitFn).toHaveBeenCalledTimes(4);
+      expect(waitFn).toHaveBeenCalledWith(4);
+
+      await jest.advanceTimersByTimeAsync(62500);
+
+      expect(fn).toHaveBeenCalledTimes(5);
+      expect(waitFn).toHaveBeenCalledTimes(4);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it("WHEN (i) => i * 500", async () => {
+      const waitFn = jest.fn((i) => i * 500); // 500ms, 1000ms, 1500ms, 2000ms, 2500ms
+
+      retry<string>(fn, { attempts: 5, wait: waitFn }).then((value) =>
+        expect(value).toBe("Done!")
+      );
+
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(waitFn).toHaveBeenCalledWith(1);
+      expect(waitFn).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(500);
+
+      expect(fn).toHaveBeenCalledTimes(2);
+      expect(waitFn).toHaveBeenCalledWith(2);
+      expect(waitFn).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(1000);
+
+      expect(fn).toHaveBeenCalledTimes(3);
+      expect(waitFn).toHaveBeenCalledTimes(3);
+      expect(waitFn).toHaveBeenCalledWith(3);
+
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(fn).toHaveBeenCalledTimes(4);
+      expect(waitFn).toHaveBeenCalledTimes(4);
+      expect(waitFn).toHaveBeenCalledWith(4);
+
+      await jest.advanceTimersByTimeAsync(2000);
+
+      expect(fn).toHaveBeenCalledTimes(5);
+      expect(waitFn).toHaveBeenCalledTimes(4);
       expect(jest.getTimerCount()).toBe(0);
     });
   });

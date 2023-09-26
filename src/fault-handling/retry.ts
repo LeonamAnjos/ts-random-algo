@@ -1,13 +1,23 @@
 import { delay, isPositiveNumber, range } from "../utils";
 
+type RetryWaitFunc = (i: number) => number;
+
 export interface RetryOptions {
   attempts?: number;
-  wait?: number;
+  wait?: number | RetryWaitFunc;
 }
 
 const defaultOptions: Required<RetryOptions> = {
   attempts: 3,
   wait: 0,
+};
+
+const getWaitFunc = (wait: number | RetryWaitFunc): RetryWaitFunc => {
+  if (typeof wait === "number") {
+    return () => wait as number;
+  }
+
+  return wait as RetryWaitFunc;
 };
 
 export const retry = <TResult>(
@@ -21,6 +31,8 @@ export const retry = <TResult>(
     return Promise.reject(Error("Attempts must be positive number!"));
   }
 
+  const waitFn: RetryWaitFunc = getWaitFunc(wait);
+
   return new Promise<TResult>(async (resolve, reject) => {
     for (const i of range(1, attempts)) {
       try {
@@ -32,8 +44,9 @@ export const retry = <TResult>(
           break;
         }
 
-        if (isPositiveNumber(wait)) {
-          await delay(wait);
+        const w = waitFn(i);
+        if (isPositiveNumber(w)) {
+          await delay(w);
         }
       }
     }
