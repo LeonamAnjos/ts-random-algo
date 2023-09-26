@@ -1,30 +1,31 @@
+import { Task } from "../task-manager/task-manager";
 import { delay, isPositiveNumber, range } from "../utils";
 
-type RetryWaitFunc = (i: number) => number;
+type RetryIntervalFunc = (i: number) => number;
 type RetryPredicateFunc = (i: number, e: unknown) => boolean;
 
 export interface RetryOptions {
   attempts?: number;
-  waitInMs?: number;
-  waitFn?: RetryWaitFunc;
+  intervalInMs?: number;
+  intervalFn?: RetryIntervalFunc;
   predicate?: RetryPredicateFunc;
 }
 
 const defaultOptions: Required<RetryOptions> = {
   attempts: 3,
-  waitInMs: 0,
-  waitFn: () => 0,
+  intervalInMs: 0,
+  intervalFn: () => 0,
   predicate: () => true,
 };
 
-export const retry = <TResult>(
-  fn: () => TResult,
+export const retry = <TaskResultType>(
+  fn: Task<TaskResultType>,
   options: RetryOptions = defaultOptions
-): Promise<TResult> => {
+): Promise<TaskResultType> => {
   const {
     attempts = defaultOptions.attempts,
-    waitInMs = defaultOptions.waitInMs,
-    waitFn = defaultOptions.waitFn,
+    intervalInMs = defaultOptions.intervalInMs,
+    intervalFn = defaultOptions.intervalFn,
     predicate = defaultOptions.predicate,
   } = options;
 
@@ -32,14 +33,14 @@ export const retry = <TResult>(
     return Promise.reject(Error("Attempts must be positive number!"));
   }
 
-  const calcWaitTimeInMs: RetryWaitFunc = isPositiveNumber(waitInMs)
-    ? () => waitInMs
-    : waitFn;
+  const calcInterval: RetryIntervalFunc = isPositiveNumber(intervalInMs)
+    ? () => intervalInMs
+    : intervalFn;
 
-  return new Promise<TResult>(async (resolve, reject) => {
+  return new Promise<TaskResultType>(async (resolve, reject) => {
     for (const i of range(1, attempts)) {
       try {
-        resolve(fn());
+        resolve(await fn());
         break;
       } catch (error) {
         if (i === attempts || !predicate(i, error)) {
@@ -47,9 +48,9 @@ export const retry = <TResult>(
           break;
         }
 
-        const waitTimeInMs = calcWaitTimeInMs(i);
-        if (isPositiveNumber(waitTimeInMs)) {
-          await delay(waitTimeInMs);
+        const interval = calcInterval(i);
+        if (isPositiveNumber(interval)) {
+          await delay(interval);
         }
       }
     }
