@@ -212,5 +212,26 @@ describe(".retry", () => {
     });
   });
 
-  it.todo("SHOULD accept promise");
+  describe("#onFailure", () => {
+    beforeEach(() => {
+      fn.mockImplementation(() => {
+        throw error;
+      });
+    });
+
+    it("WHEN it fails every attempt", async () => {
+      const onFailureFn = jest.fn();
+
+      await retry(fn, { retries: 3, onFailure: onFailureFn }).catch((err) => {
+        expect(err).toBe(error);
+      });
+
+      expect(onFailureFn).toHaveBeenCalledTimes(3);
+      expect(onFailureFn).toHaveBeenNthCalledWith(1, 1, 2, error);
+      expect(onFailureFn).toHaveBeenNthCalledWith(2, 2, 1, error);
+      expect(onFailureFn).toHaveBeenNthCalledWith(3, 3, 0, error);
+    });
+  });
+
+  it.todo("SHOULD abort on signal");
 });

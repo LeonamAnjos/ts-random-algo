@@ -1,14 +1,20 @@
 import { Task } from "../task-manager/task-manager";
 import { delay, isPositiveNumber, range } from "../utils";
 
-type RetryIntervalFunc = (i: number) => number;
-type RetryPredicateFunc = (i: number, e: unknown) => boolean;
+type RetryIntervalFunc = (attempt: number) => number;
+type RetryPredicateFunc = (attempt: number, error: unknown) => boolean;
+type RetryOnFailureFunc = (
+  attempt: number,
+  retriesLeft: number,
+  error: unknown
+) => void;
 
 export interface RetryOptions {
   retries?: number;
   intervalInMs?: number;
   intervalFn?: RetryIntervalFunc;
   predicate?: RetryPredicateFunc;
+  onFailure?: RetryOnFailureFunc;
 }
 
 const defaultOptions: Required<RetryOptions> = {
@@ -16,6 +22,7 @@ const defaultOptions: Required<RetryOptions> = {
   intervalInMs: 0,
   intervalFn: () => 0,
   predicate: () => true,
+  onFailure: () => {},
 };
 
 export const retry = <TaskResultType>(
@@ -27,6 +34,7 @@ export const retry = <TaskResultType>(
     intervalInMs = defaultOptions.intervalInMs,
     intervalFn = defaultOptions.intervalFn,
     predicate = defaultOptions.predicate,
+    onFailure = defaultOptions.onFailure,
   } = options;
 
   if (!isPositiveNumber(retries)) {
@@ -43,6 +51,8 @@ export const retry = <TaskResultType>(
         resolve(await fn());
         break;
       } catch (error) {
+        onFailure(i, retries - i, error);
+
         if (i === retries || !predicate(i, error)) {
           reject(error);
           break;
