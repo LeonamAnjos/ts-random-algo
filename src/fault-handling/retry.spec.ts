@@ -7,7 +7,7 @@ describe(".retry", () => {
 
   beforeEach(() => fn.mockClear());
 
-  describe("#attempts", () => {
+  describe("#retries", () => {
     it("WHEN default AND succeeds", async () => {
       fn.mockReturnValueOnce("Done!");
 
@@ -17,33 +17,33 @@ describe(".retry", () => {
       expect(actual).toBe("Done!");
     });
 
-    [...range(-5, 0)].forEach((attempts) => {
-      it(`WHEN ${attempts}`, async () => {
-        await retry(fn, { attempts }).catch((err) =>
-          expect(err.message).toBe("Attempts must be positive number!")
+    [...range(-5, 0)].forEach((retries) => {
+      it(`WHEN ${retries}`, async () => {
+        await retry(fn, { retries }).catch((err) =>
+          expect(err.message).toBe("Retries must be positive number!")
         );
 
         expect(fn).not.toHaveBeenCalled();
       }, 1000);
     });
 
-    [...range(1, 5)].forEach((attempts) => {
-      it(`WHEN ${attempts} AND rejects`, async () => {
+    [...range(1, 5)].forEach((retries) => {
+      it(`WHEN ${retries} AND rejects`, async () => {
         fn.mockImplementation(() => {
           throw error;
         });
 
-        await retry(fn, { attempts }).catch((err) => {
+        await retry(fn, { retries }).catch((err) => {
           expect(err).toBe(error);
         });
 
-        expect(fn).toHaveBeenCalledTimes(attempts);
+        expect(fn).toHaveBeenCalledTimes(retries);
       });
     });
 
-    [...range(2, 6)].forEach((attempts) => {
-      it(`WHEN ${attempts} AND last attempt succeeds`, async () => {
-        for (let j = 1; j < attempts; j++) {
+    [...range(2, 6)].forEach((retries) => {
+      it(`WHEN ${retries} AND last attempt succeeds`, async () => {
+        for (let j = 1; j < retries; j++) {
           fn.mockImplementationOnce(() => {
             throw error;
           });
@@ -51,11 +51,11 @@ describe(".retry", () => {
 
         fn.mockImplementation(() => "Done!");
 
-        await retry<string>(fn, { attempts })
+        await retry<string>(fn, { retries })
           .then((actual: string) => expect(actual).toBe("Done!"))
           .catch((_) => fail());
 
-        expect(fn).toHaveBeenCalledTimes(attempts);
+        expect(fn).toHaveBeenCalledTimes(retries);
       });
     });
   });
@@ -120,7 +120,7 @@ describe(".retry", () => {
     it("WHEN (i) => 5**i * 100", async () => {
       const intervalFn = jest.fn((i) => Math.pow(5, i) * 100); // 500ms, 2.500ms, 12.500ms, 62.500ms, 312.500ms
 
-      retry<string>(fn, { attempts: 5, intervalFn: intervalFn }).then((value) =>
+      retry<string>(fn, { retries: 5, intervalFn }).then((value) =>
         expect(value).toBe("Done!")
       );
 
@@ -156,7 +156,7 @@ describe(".retry", () => {
     it("WHEN (i) => i * 500", async () => {
       const intervalFn = jest.fn((i) => i * 500); // 500ms, 1000ms, 1500ms, 2000ms, 2500ms
 
-      retry<string>(fn, { attempts: 5, intervalFn }).then((value) =>
+      retry<string>(fn, { retries: 5, intervalFn }).then((value) =>
         expect(value).toBe("Done!")
       );
 
@@ -201,7 +201,7 @@ describe(".retry", () => {
       it(`WHEN false on ${i} attempt`, async () => {
         const predicate = jest.fn((attempt: number) => attempt < i);
 
-        await retry(fn, { attempts: 10, predicate }).catch((err) => {
+        await retry(fn, { retries: 10, predicate }).catch((err) => {
           expect(err).toBe(error);
         });
 

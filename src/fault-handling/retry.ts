@@ -5,14 +5,14 @@ type RetryIntervalFunc = (i: number) => number;
 type RetryPredicateFunc = (i: number, e: unknown) => boolean;
 
 export interface RetryOptions {
-  attempts?: number;
+  retries?: number;
   intervalInMs?: number;
   intervalFn?: RetryIntervalFunc;
   predicate?: RetryPredicateFunc;
 }
 
 const defaultOptions: Required<RetryOptions> = {
-  attempts: 3,
+  retries: 3,
   intervalInMs: 0,
   intervalFn: () => 0,
   predicate: () => true,
@@ -23,14 +23,14 @@ export const retry = <TaskResultType>(
   options: RetryOptions = defaultOptions
 ): Promise<TaskResultType> => {
   const {
-    attempts = defaultOptions.attempts,
+    retries = defaultOptions.retries,
     intervalInMs = defaultOptions.intervalInMs,
     intervalFn = defaultOptions.intervalFn,
     predicate = defaultOptions.predicate,
   } = options;
 
-  if (!isPositiveNumber(attempts)) {
-    return Promise.reject(Error("Attempts must be positive number!"));
+  if (!isPositiveNumber(retries)) {
+    return Promise.reject(Error("Retries must be positive number!"));
   }
 
   const calcInterval: RetryIntervalFunc = isPositiveNumber(intervalInMs)
@@ -38,12 +38,12 @@ export const retry = <TaskResultType>(
     : intervalFn;
 
   return new Promise<TaskResultType>(async (resolve, reject) => {
-    for (const i of range(1, attempts)) {
+    for (const i of range(1, retries)) {
       try {
         resolve(await fn());
         break;
       } catch (error) {
-        if (i === attempts || !predicate(i, error)) {
+        if (i === retries || !predicate(i, error)) {
           reject(error);
           break;
         }
