@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "jest --watchAll --verbose"
+    "test": "jest --watchAll --verbose --collect-coverage"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
