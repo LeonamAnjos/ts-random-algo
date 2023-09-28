@@ -233,5 +233,37 @@ describe(".retry", () => {
     });
   });
 
-  it.todo("SHOULD abort on signal");
+  describe("#signal", () => {
+    jest.useFakeTimers();
+
+    beforeEach(() => {
+      fn.mockImplementation(() => {
+        throw error;
+      });
+    });
+
+    it("WHEN aborted", async () => {
+      const controller = new AbortController();
+
+      retry(fn, {
+        retries: Number.POSITIVE_INFINITY,
+        intervalInMs: 10,
+        signal: controller.signal,
+      }).catch((err) => {
+        expect(err.message).toBe("AbortError");
+      });
+
+      expect(fn).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(10);
+
+      expect(fn).toHaveBeenCalledTimes(2);
+
+      controller.abort("AbortError");
+
+      await jest.advanceTimersByTimeAsync(10);
+
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+  });
 });

@@ -15,9 +15,10 @@ export interface RetryOptions {
   intervalFn?: RetryIntervalFunc;
   predicate?: RetryPredicateFunc;
   onFailure?: RetryOnFailureFunc;
+  signal?: AbortSignal;
 }
 
-const defaultOptions: Required<RetryOptions> = {
+const defaultOptions: Required<Omit<RetryOptions, "signal">> = {
   retries: 3,
   intervalInMs: 0,
   intervalFn: () => 0,
@@ -35,6 +36,7 @@ export const retry = <TaskResultType>(
     intervalFn = defaultOptions.intervalFn,
     predicate = defaultOptions.predicate,
     onFailure = defaultOptions.onFailure,
+    signal,
   } = options;
 
   if (!isPositiveNumber(retries)) {
@@ -47,6 +49,11 @@ export const retry = <TaskResultType>(
 
   return new Promise<TaskResultType>(async (resolve, reject) => {
     for (const i of range(1, retries)) {
+      if (!!signal?.aborted) {
+        reject(Error(signal?.reason));
+        break;
+      }
+
       try {
         resolve(await fn());
         break;
