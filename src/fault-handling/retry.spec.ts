@@ -7,6 +7,28 @@ describe(".retry", () => {
 
   beforeEach(() => fn.mockClear());
 
+  it("WHEN input function returns a promise", async () => {
+    fn.mockRejectedValueOnce(error);
+    fn.mockResolvedValueOnce("Resolved!");
+
+    const actual = await retry<string>(fn);
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(actual).toBe("Resolved!");
+  });
+
+  it("WHEN input function returns a string", async () => {
+    fn.mockImplementationOnce(() => {
+      throw error;
+    });
+    fn.mockReturnValueOnce("Returned!");
+
+    const actual = await retry<string>(fn);
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(actual).toBe("Returned!");
+  });
+
   describe("#retries", () => {
     it("WHEN default AND succeeds", async () => {
       fn.mockReturnValueOnce("Done!");
